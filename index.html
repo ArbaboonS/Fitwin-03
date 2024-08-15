@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fitness Tracker App with STEPN-like Features</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/telegram-web-app/6.7.0/telegram-web-app.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/leaflet.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/leaflet.css">
+<style>
+body {
+font-family: Arial, sans-serif;
+margin: 0;
+padding: 0;
+background-color: var(--tg-theme-bg-color, #ffffff);
+color: var(--tg-theme-text-color, #000000);
+}
+.container {
+max-width: 600px;
+margin: 0 auto;
+padding: 20px;
+}
+h1, h2, h3 {
+text-align: center;
+}
+.button {
+display: block;
+width: 100%;
+padding: 10px;
+margin: 10px 0;
+background-color: var(--tg-theme-button-color, #3390ec);
+color: var(--tg-theme-button-text-color, #ffffff);
+border: none;
+border-radius: 5px;
+font-size: 16px;
+cursor: pointer;
+}
+.stats {
+display: flex;
+justify-content: space-around;
+margin-bottom: 20px;
+}
+.stat-item {
+text-align: center;
+}
+.progress-bar {
+width: 100%;
+background-color: #e0e0e0;
+padding: 3px;
+border-radius: 3px;
+margin-bottom: 20px;
+}
+.progress-bar-fill {
+display: block;
+height: 22px;
+background-color: #659cef;
+border-radius: 3px;
+transition: width 500ms ease-in-out;
+}
+.progress-bar-text {
+color: white;
+text-align: center;
+line-height: 22px;
+}
+#map {
+width: 100%;
+height: 300px;
+background-color: #f0f0f0;
+margin-bottom: 20px;
+}
+.sneaker-types {
+display: flex;
+justify-content: space-around;
+margin-bottom: 20px;
+}
+.sneaker-type {
+text-align: center;
+cursor: pointer;
+padding: 10px;
+border: 1px solid #ccc;
+border-radius: 5px;
+}
+.sneaker-type.active {
+background-color: #e0e0e0;
+}
+</style>
+</head>
+<body>
+<div class="container">
+<h1>Fitness Tracker App with STEPN-like Features</h1>
+
+<div id="home" style="display: block;">
+<!-- Home content remains the same -->
+</div>
+
+<div id="challenges" style="display: none;">
+<h2>Challenges</h2>
+<button class="button" onclick="joinChallenge('5km Walk')">5km Walk Challenge</button>
+<button class="button" onclick="joinChallenge('10km Run')">10km Run Challenge</button>
+<button class="button" onclick="joinChallenge('Burn 500 Calories')">Burn 500 Calories Challenge</button>
+<button class="button" onclick="showHome()">Back to Home</button>
+</div>
+
+<div id="rewards" style="display: none;">
+<h2>Rewards</h2>
+<p>Your Score: <span id="rewardScore">0</span></p>
+<p>Available Rewards:</p>
+<button class="button" onclick="claimReward(100)">Claim 1 TON (Requires 100 points)</button>
+<button class="button" onclick="claimReward(500)">Claim 5 TON (Requires 500 points)</button>
+<button class="button" onclick="claimReward(1000)">Claim 10 TON (Requires 1000 points)</button>
+<button class="button" onclick="showHome()">Back to Home</button>
+</div>
+
+<div id="invite" style="display: none;">
+<h2>Invite Friends</h2>
+<p>Your invite link:</p>
+<input type="text" id="inviteLink" readonly value="https://t.me/YourBotUsername?start=ref123456">
+<button class="button" onclick="copyInviteLink()">Copy Link</button>
+<button class="button" onclick="showHome()">Back to Home</button>
+</div>
+
+<div id="levelUp" style="display: none;">
+<h2>Level Up</h2>
+<p>Current Level: <span id="currentLevel">0</span></p>
+<p>GST Required: <span id="gstRequired">10</span></p>
+<p>GMT Required: <span id="gmtRequired">5</span></p>
+<button class="button" onclick="performLevelUp()">Perform Level Up</button>
+<button class="button" onclick="showHome()">Back to Home</button>
+</div>
+
+<div id="shop" style="display: none;">
+<h2>Shop</h2>
+<p>Available GST: <span id="availableGST">0</span></p>
+<button class="button" onclick="buyItem('Sneaker Box')">Buy Sneaker Box (300 GST)</button>
+<button class="button" onclick="buyItem('Gem')">Buy Gem (100 GST)</button>
+<button class="button" onclick="showHome()">Back to Home</button>
+</div>
+</div>
+
+<script>
+let webApp = window.Telegram.WebApp;
+webApp.ready();
+
+let gst = 0;
+let gmt = 0;
+let energy = 10;
+let level = 0;
+let sneakerType = 'Walker';
+let watchId;
+let map;
+let marker;
+let startTime;
+let distance = 0;
+let lastPosition;
+let score = 0;
+
+const sneakerTypes = {
+Walker: { optimalSpeed: { min: 1, max: 6 }, gstReturn: 4 },
+Jogger: { optimalSpeed: { min: 4, max: 10 }, gstReturn: 5 },
+Runner: { optimalSpeed: { min: 8, max: 20 }, gstReturn: 6 },
+Trainer: { optimalSpeed: { min: 1, max: 20 }, gstReturn: 5.5 }
+};
+
+// Previous functions remain the same
+
+function showChallenges() {
+document.getElementById('home').style.display = 'none';
+document.getElementById('challenges').style.display = 'block';
+}
+
+function joinChallenge(challengeName) {
+webApp.showAlert(`You joined the ${challengeName} challenge!`);
+// Here you would implement the logic for starting and tracking the challenge
+}
+
+function showRewards() {
+document.getElementById('home').style.display = 'none';
+document.getElementById('rewards').style.display = 'block';
+document.getElementById('rewardScore').textContent = score;
+}
+
+function claimReward(requiredPoints) {
+if (score >= requiredPoints) {
+score -= requiredPoints;
+const tonAmount = requiredPoints / 100;
+webApp.showAlert(`Congratulations! You claimed ${tonAmount} TON!`);
+document.getElementById('rewardScore').textContent = score;
+} else {
+webApp.showAlert("You don't have enough points to claim this reward.");
+}
+}
+
+function showInvite() {
+document.getElementById('home').style.display = 'none';
+document.getElementById('invite').style.display = 'block';
+}
+
+function copyInviteLink() {
+const inviteLink = document.getElementById('inviteLink');
+inviteLink.select();
+document.execCommand('copy');
+webApp.showAlert('Invite link copied to clipboard!');
+}
+
+function showLevelUp() {
+document.getElementById('home').style.display = 'none';
+document.getElementById('levelUp').style.display = 'block';
+updateLevelUpInfo();
+}
+
+function updateLevelUpInfo() {
+document.getElementById('currentLevel').textContent = level;
+const gstRequired = (level + 1) * 10;
+const gmtRequired = Math.floor((level + 1) / 2) * 5;
+document.getElementById('gstRequired').textContent = gstRequired;
+document.getElementById('gmtRequired').textContent = gmtRequired;
+}
+
+function performLevelUp() {
+const gstRequired = (level + 1) * 10;
+const gmtRequired = Math.floor((level + 1) / 2) * 5;
+if (gst >= gstRequired && gmt >= gmtRequired) {
+gst -= gstRequired;
+gmt -= gmtRequired;
+level++;
+webApp.showAlert(`Congratulations! You reached level ${level}!`);
+updateLevelUpInfo();
+} else {
+webApp.showAlert("You don't have enough GST or GMT to level up.");
+}
+}
+
+function showShop() {
+document.getElementById('home').style.display = 'none';
+document.getElementById('shop').style.display = 'block';
+document.getElementById('availableGST').textContent = gst.toFixed(2);
+}
+
+function buyItem(itemName) {
+let cost;
+switch (itemName) {
+case 'Sneaker Box':
+cost = 300;
+break;
+case 'Gem':
+cost = 100;
+break;
+default:
+webApp.showAlert("Unknown item.");
+return;
+}
+
+if (gst >= cost) {
+gst -= cost;
+webApp.showAlert(`You bought a ${itemName} for ${cost} GST!`);
+document.getElementById('availableGST').textContent = gst.toFixed(2);
+} else {
+webApp.showAlert("You don't have enough GST to buy this item.");
+}
+}
+
+// Initialize the map when the page loads
+window.onload = function() {
+initMap();
+};
+</script>
+</body>
+</html>
