@@ -3,183 +3,153 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Fitness Tracker App with STEPN-like Features</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/telegram-web-app/6.7.0/telegram-web-app.min.js"></script>
+<title>Fitness Tracker App</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/leaflet.css" />
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/leaflet.js"></script>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/leaflet.css">
 <style>
 body {
 font-family: Arial, sans-serif;
 margin: 0;
-padding: 0;
-background-color: var(--tg-theme-bg-color, #ffffff);
-color: var(--tg-theme-text-color, #000000);
+padding: 20px;
+background-color: #f0f0f0;
 }
 .container {
 max-width: 600px;
 margin: 0 auto;
+background-color: white;
 padding: 20px;
+border-radius: 10px;
+box-shadow: 0 0 10px rgba(0,0,0,0.1);
 }
-h1, h2, h3 {
-text-align: center;
-}
-.button {
-display: block;
-width: 100%;
-padding: 10px;
-margin: 10px 0;
-background-color: var(--tg-theme-button-color, #3390ec);
-color: var(--tg-theme-button-text-color, #ffffff);
+button {
+background-color: #4CAF50;
 border: none;
-border-radius: 5px;
+color: white;
+padding: 10px 20px;
+text-align: center;
+text-decoration: none;
+display: inline-block;
 font-size: 16px;
+margin: 4px 2px;
+cursor: pointer;
+border-radius: 5px;
+}
+.sneaker-type {
+display: inline-block;
+padding: 10px;
+margin: 5px;
+border: 1px solid #ddd;
+border-radius: 5px;
 cursor: pointer;
 }
-.stats {
-display: flex;
-justify-content: space-around;
-margin-bottom: 20px;
+.sneaker-type.active {
+background-color: #4CAF50;
+color: white;
 }
-.stat-item {
-text-align: center;
+#map {
+height: 300px;
+margin-top: 20px;
 }
 .progress-bar {
 width: 100%;
-background-color: #e0e0e0;
-padding: 3px;
-border-radius: 3px;
-margin-bottom: 20px;
-}
-.progress-bar-fill {
-display: block;
-height: 22px;
-background-color: #659cef;
-border-radius: 3px;
-transition: width 500ms ease-in-out;
-}
-.progress-bar-text {
-color: white;
-text-align: center;
-line-height: 22px;
-}
-#map {
-width: 100%;
-height: 300px;
-background-color: #f0f0f0;
-margin-bottom: 20px;
-}
-.sneaker-types {
-display: flex;
-justify-content: space-around;
-margin-bottom: 20px;
-}
-.sneaker-type {
-text-align: center;
-cursor: pointer;
-padding: 10px;
-border: 1px solid #ccc;
+background-color: #ddd;
 border-radius: 5px;
+margin-top: 10px;
 }
-.sneaker-type.active {
-background-color: #e0e0e0;
+.progress {
+width: 0%;
+height: 20px;
+background-color: #4CAF50;
+border-radius: 5px;
+text-align: center;
+line-height: 20px;
+color: white;
 }
 </style>
 </head>
 <body>
 <div class="container">
-<h1>Fitness Tracker App with STEPN-like Features</h1>
+<h1>Fitness Tracker App</h1>
 
-<div id="home" style="display: block;">
-<h2>Home</h2>
-<div class="stats">
-<div class="stat-item">
-<h3>GST</h3>
-<p id="gst">0</p>
-</div>
-<div class="stat-item">
-<h3>Energy</h3>
-<p id="energy">10</p>
-</div>
-<div class="stat-item">
-<h3>Level</h3>
-<p id="level">0</p>
-</div>
-</div>
-<div class="progress-bar">
-<span class="progress-bar-fill" style="width:0%;">
-<span class="progress-bar-text">0%</span>
-</span>
-</div>
-<h3>Select Sneaker Type</h3>
-<div class="sneaker-types">
+<div id="home">
+<h2>Select Sneaker Type</h2>
 <div class="sneaker-type" onclick="selectSneakerType('Walker')">Walker</div>
 <div class="sneaker-type" onclick="selectSneakerType('Jogger')">Jogger</div>
 <div class="sneaker-type" onclick="selectSneakerType('Runner')">Runner</div>
 <div class="sneaker-type" onclick="selectSneakerType('Trainer')">Trainer</div>
+
+<h2>Start Walking</h2>
+<button onclick="startTracking()">Start</button>
+<button onclick="stopTracking()">Stop</button>
+
+<div id="stats">
+<p>Distance: <span id="distance">0</span> km</p>
+<p>Speed: <span id="speed">0</span> km/h</p>
+<p>GST: <span id="gst">0</span></p>
+<p>GMT: <span id="gmt">0</span></p>
+<p>Energy: <span id="energy">10</span></p>
 </div>
+
 <div id="map"></div>
-<button class="button" onclick="startTracking()">Start Tracking</button>
-<button class="button" onclick="stopTracking()">Stop Tracking</button>
-<button class="button" onclick="showChallenges()">Challenges</button>
-<button class="button" onclick="showRewards()">Rewards</button>
-<button class="button" onclick="showInvite()">Invite Friends</button>
-<button class="button" onclick="showStats()">Stats & Progress</button>
-<button class="button" onclick="showLevelUp()">Level Up</button>
-<button class="button" onclick="showShop()">Shop</button>
+
+<h2>Daily Goal Progress</h2>
+<div class="progress-bar">
+<div id="progressBar" class="progress">0%</div>
+</div>
+
+<h2>Menu</h2>
+<button onclick="showChallenges()">Challenges</button>
+<button onclick="showRewards()">Rewards</button>
+<button onclick="showInvite()">Invite Friends</button>
+<button onclick="showStats()">Weekly Stats</button>
+<button onclick="showLevelUp()">Level Up</button>
+<button onclick="showShop()">Shop</button>
 </div>
 
 <div id="challenges" style="display: none;">
 <h2>Challenges</h2>
-<button class="button" onclick="joinChallenge('5km Walk')">5km Walk Challenge</button>
-<button class="button" onclick="joinChallenge('10km Run')">10km Run Challenge</button>
-<button class="button" onclick="joinChallenge('Burn 500 Calories')">Burn 500 Calories Challenge</button>
-<button class="button" onclick="showHome()">Back to Home</button>
+<button onclick="joinChallenge('5km Walk')">Join 5km Walk</button>
+<button onclick="joinChallenge('10km Run')">Join 10km Run</button>
+<button onclick="joinChallenge('Burn 500 Calories')">Join Burn 500 Calories</button>
+<button onclick="showHome()">Back to Home</button>
 </div>
 
 <div id="rewards" style="display: none;">
 <h2>Rewards</h2>
-<p>Your Score: <span id="rewardScore">0</span></p>
-<button class="button" onclick="claimReward(100)">Claim 1 TON (Requires 100 points)</button>
-<button class="button" onclick="claimReward(500)">Claim 5 TON (Requires 500 points)</button>
-<button class="button" onclick="claimReward(1000)">Claim 10 TON (Requires 1000 points)</button>
-<button class="button" onclick="showHome()">Back to Home</button>
+<p>Your score: <span id="rewardScore">0</span></p>
+<button onclick="claimReward(100)">Claim 1 TON (100 points)</button>
+<button onclick="claimReward(500)">Claim 5 TON (500 points)</button>
+<button onclick="showHome()">Back to Home</button>
 </div>
 
 <div id="invite" style="display: none;">
 <h2>Invite Friends</h2>
-<p>Your invite link:</p>
-<input type="text" id="inviteLink" readonly value="https://t.me/YourBotUsername?start=ref123456">
-<button class="button" onclick="copyInviteLink()">Copy Link</button>
-<button class="button" onclick="showHome()">Back to Home</button>
+<input type="text" id="inviteLink" value="https://example.com/invite" readonly>
+<button onclick="copyInviteLink()">Copy Invite Link</button>
+<button onclick="showHome()">Back to Home</button>
 </div>
 
 <div id="stats" style="display: none;">
-<h2>Stats & Progress</h2>
-<h3>Daily Goal Progress</h3>
-<div class="progress-bar">
-<span class="progress-bar-fill" style="width:0%;">
-<span class="progress-bar-text">0%</span>
-</span>
-</div>
-<h3>Weekly Stats</h3>
+<h2>Weekly Stats</h2>
 <div id="weeklyStats"></div>
-<button class="button" onclick="showHome()">Back to Home</button>
+<button onclick="showHome()">Back to Home</button>
 </div>
 
 <div id="levelUp" style="display: none;">
 <h2>Level Up</h2>
 <p>Current Level: <span id="currentLevel">0</span></p>
-<p>TNT Required: <span id="tntRequired">0</span></p>
-<p>GMT Required: <span id="gmtRequired">0</span></p>
-<button class="button" onclick="performLevelUp()">Perform Level Up</button>
-<button class="button" onclick="showHome()">Back to Home</button>
+<p>GST Required: <span id="tntRequired">10</span></p>
+<p>GMT Required: <span id="gmtRequired">5</span></p>
+<button onclick="performLevelUp()">Level Up</button>
+<button onclick="showHome()">Back to Home</button>
 </div>
 
 <div id="shop" style="display: none;">
 <h2>Shop</h2>
-<button class="button" onclick="buyItem('Sneaker Box')">Buy Sneaker Box (300 GST)</button>
-<button class="button" onclick="buyItem('Gem')">Buy Gem (100 GST)</button>
-<button class="button" onclick="showHome()">Back to Home</button>
+<button onclick="buyItem('Sneaker Box')">Buy Sneaker Box (300 GST)</button>
+<button onclick="buyItem('Gem')">Buy Gem (100 GST)</button>
+<button onclick="showHome()">Back to Home</button>
 </div>
 </div>
 
@@ -188,6 +158,7 @@ let webApp = window.Telegram.WebApp;
 webApp.ready();
 
 let gst = 0;
+let gmt = 0;
 let energy = 10;
 let level = 0;
 let sneakerType = 'Walker';
@@ -216,38 +187,32 @@ attribution: '© OpenStreetMap contributors'
 function selectSneakerType(type) {
 sneakerType = type;
 document.querySelectorAll('.sneaker-type').forEach(el => el.classList.remove('active'));
-document.querySelector(`.sneaker-type:contains('${type}')`).classList.add('active');
+document.querySelector(`.sneaker-type:nth-child(${['Walker', 'Jogger', 'Runner', 'Trainer'].indexOf(type) + 1})`).classList.add('active');
 webApp.showAlert(`You selected ${type} sneaker`);
 }
 
 function startTracking() {
 if (energy <= 0) {
-webApp.showAlert("You don't have enough energy to start tracking");
+webApp.showAlert("Not enough energy to start walking!");
 return;
 }
 
-if ("geolocation" in navigator) {
 startTime = new Date();
-watchId = navigator.geolocation.watchPosition((position) => {
-updateLocation(position);
-updateStats();
-}, (error) => {
-console.error("Error getting location: " + error.message);
-webApp.showAlert("Error getting location: " + error.message);
-}, {
-enableHighAccuracy: true
+watchId = navigator.geolocation.watchPosition(updateLocation, null, {
+enableHighAccuracy: true,
+timeout: 5000,
+maximumAge: 0
 });
-} else {
-console.error("Geolocation is not supported by this browser.");
-webApp.showAlert("Geolocation is not supported by this browser.");
-}
+
+webApp.showAlert("Started tracking your walk!");
 }
 
 function stopTracking() {
 if (watchId) {
 navigator.geolocation.clearWatch(watchId);
+watchId = null;
 calculateRewards();
-webApp.showAlert("Tracking stopped");
+webApp.showAlert("Stopped tracking your walk!");
 }
 }
 
@@ -255,69 +220,71 @@ function updateLocation(position) {
 const lat = position.coords.latitude;
 const lon = position.coords.longitude;
 
+if (lastPosition) {
+distance += calculateDistance(lastPosition.lat, lastPosition.lon, lat, lon);
+}
+
+lastPosition = { lat, lon };
+
 if (!marker) {
 marker = L.marker([lat, lon]).addTo(map);
 } else {
 marker.setLatLng([lat, lon]);
 }
 
-map.setView([lat, lon], 13);
+map.setView([lat, lon]);
 
-if (lastPosition) {
-distance += calculateDistance(lastPosition, position.coords);
-}
-lastPosition = position.coords;
-
-updateProgressBar();
+updateStats();
 }
 
-function calculateDistance(pos1, pos2) {
-const R = 6371e3; // Earth's radius in meters
-const φ1 = pos1.latitude * Math.PI/180;
-const φ2 = pos2.latitude * Math.PI/180;
-const Δφ = (pos2.latitude - pos1.latitude) * Math.PI/180;
-const Δλ = (pos2.longitude - pos1.longitude) * Math.PI/180;
-
-const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
-Math.cos(φ1) * Math.cos(φ2) *
-Math.sin(Δλ/2) * Math.sin(Δλ/2);
+function calculateDistance(lat1, lon1, lat2, lon2) {
+const R = 6371; // Earth's radius in km
+const dLat = (lat2 - lat1) * Math.PI / 180;
+const dLon = (lon2 - lon1) * Math.PI / 180;
+const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+Math.sin(dLon/2) * Math.sin(dLon/2);
 const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-
 return R * c;
 }
 
 function updateStats() {
-const duration = (new Date() - startTime) / 1000 / 60; // duration in minutes
-const speed = distance / duration / 1000 * 60; // speed in km/h
+const now = new Date();
+const duration = (now - startTime) / 1000 / 60 / 60; // hours
+const speed = distance / duration;
 
-const optimalSpeed = sneakerTypes[sneakerType].optimalSpeed;
-const isOptimalSpeed = speed >= optimalSpeed.min && speed <= optimalSpeed.max;
-
-if (isOptimalSpeed) {
-gst += sneakerTypes[sneakerType].gstReturn * (duration / 60);
-score += Math.floor(sneakerTypes[sneakerType].gstReturn * (duration / 60));
-}
-
-energy -= duration / 60;
-if (energy < 0) energy = 0;
-
+document.getElementById('distance').textContent = distance.toFixed(2);
+document.getElementById('speed').textContent = speed.toFixed(2);
 document.getElementById('gst').textContent = gst.toFixed(2);
-document.getElementById('energy').textContent = energy.toFixed(2);
-document.getElementById('level').textContent = level;
-document.getElementById('rewardScore').textContent = score;
+document.getElementById('gmt').textContent = gmt.toFixed(2);
+document.getElementById('energy').textContent = energy.toFixed(1);
+
+updateProgressBar(distance);
 }
 
-function updateProgressBar() {
-const progressPercentage = Math.min((distance / 1000) * 10, 100); // 10km as 100%
-document.querySelector('.progress-bar-fill').style.width = progressPercentage + '%';
-document.querySelector('.progress-bar-text').textContent = Math.round(progressPercentage) + '%';
+function updateProgressBar(distance) {
+const dailyGoal = 10; // 10 km daily goal
+const progress = Math.min((distance / dailyGoal) * 100, 100);
+document.getElementById('progressBar').style.width = `${progress}%`;
+document.getElementById('progressBar').textContent = `${progress.toFixed(1)}%`;
 }
 
 function calculateRewards() {
-const earnedGST = Math.floor(gst);
-gst += earnedGST;
-score += earnedGST;
-webApp.showAlert(`You earned ${earnedGST} GST for this tracking session!`);
+const duration = (new Date() - startTime) / 1000 / 60 / 60; // hours
+const speed = distance / duration;
+const sneaker = sneakerTypes[sneakerType];
+
+if (speed >= sneaker.optimalSpeed.min && speed <= sneaker.optimalSpeed.max) {
+gst += sneaker.gstReturn * duration;
+gmt += 0.1 * duration; // Simplified GMT calculation
+}
+
+energy -= duration * 2; // Consume 2 energy per hour
+if (energy < 0) energy = 0;
+
+score += Math.floor(distance * 10); // 10 points per km
+
+updateStats();
 }
 
 function showHome() {
@@ -335,10 +302,25 @@ document.getElementById('home').style.display = 'none';
 document.getElementById('challenges').style.display = 'block';
 }
 
+function joinChallenge(challengeName) {
+webApp.showAlert(`You joined the ${challengeName}!`);
+}
+
 function showRewards() {
 document.getElementById('home').style.display = 'none';
 document.getElementById('rewards').style.display = 'block';
 document.getElementById('rewardScore').textContent = score;
+}
+
+function claimReward(requiredPoints) {
+if (score >= requiredPoints) {
+score -= requiredPoints;
+const tonAmount = requiredPoints / 100;
+webApp.showAlert(`Congratulations! You claimed ${tonAmount} TON!`);
+document.getElementById('rewardScore').textContent = score;
+} else {
+webApp.showAlert("You don't have enough points to claim this reward.");
+}
 }
 
 function showInvite() {
@@ -346,6 +328,88 @@ document.getElementById('home').style.display = 'none';
 document.getElementById('invite').style.display = 'block';
 }
 
+function copyInviteLink() {
+const inviteLink = document.getElementById('inviteLink');
+inviteLink.select();
+document.execCommand('copy');
+webApp.showAlert('Invite link copied to clipboard!');
+}
+
 function showStats() {
 document.getElementById('home').style.display = 'none';
-document.getElementById('stats').style.display
+document.getElementById('stats').style.display = 'block';
+updateWeeklyStats();
+}
+
+function updateWeeklyStats() {
+const weeklyStatsDiv = document.getElementById('weeklyStats');
+weeklyStatsDiv.innerHTML = `
+<p>Total Distance: ${(distance * 7).toFixed(2)} km</p>
+<p>Total GST Earned: ${(gst * 7).toFixed(2)}</p>
+<p>Total GMT Earned: ${(gmt * 7).toFixed(2)}</p>
+`;
+}
+
+function showLevelUp() {
+document.getElementById('home').style.display = 'none';
+document.getElementById('levelUp').style.display = 'block';
+updateLevelUpInfo();
+}
+
+function updateLevelUpInfo() {
+document.getElementById('currentLevel').textContent = level;
+const tntRequired = (level + 1) * 10;
+const gmtRequired = Math.floor((level + 1) / 2) * 5;
+document.getElementById('tntRequired').textContent = tntRequired;
+document.getElementById('gmtRequired').textContent = gmtRequired;
+}
+
+function performLevelUp() {
+const tntRequired = (level + 1) * 10;
+const gmtRequired = Math.floor((level + 1) / 2) * 5;
+if (gst >= tntRequired && gmt >= gmtRequired) {
+gst -= tntRequired;
+gmt -= gmtRequired;
+level++;
+webApp.showAlert(`Congratulations! You reached level ${level}!`);
+updateLevelUpInfo();
+} else {
+webApp.showAlert("You don't have enough GST or GMT to level up.");
+}
+}
+
+function showShop() {
+document.getElementById('home').style.display = 'none';
+document.getElementById('shop').style.display = 'block';
+}
+
+function buyItem(itemName) {
+let cost;
+switch (itemName) {
+case 'Sneaker Box':
+cost = 300;
+break;
+case 'Gem':
+cost = 100;
+break;
+default:
+webApp.showAlert("Unknown item.");
+return;
+}
+
+if (gst >= cost) {
+gst -= cost;
+webApp.showAlert(`You bought a ${itemName} for ${cost} GST!`);
+document.getElementById('gst').textContent = gst.toFixed(2);
+} else {
+webApp.showAlert("You don't have enough GST to buy this item.");
+}
+}
+
+// Initialize the map when the page loads
+window.onload = function() {
+initMap();
+};
+</script>
+</body>
+</html>
